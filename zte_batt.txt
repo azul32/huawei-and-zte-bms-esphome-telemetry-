@@ -1,0 +1,504 @@
+esphome:
+  name: esp32
+  friendly_name: esp32
+ 
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: esp-idf
+
+logger:
+  level: VERBOSE
+  hardware_uart: UART0
+
+api:
+
+ota:
+  - platform: esphome
+  - platform: web_server
+
+web_server:
+  local: true
+  version: 3
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: NONE
+  output_power: 12
+  use_address: 192.168.99.95
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "Asia/Jakarta"
+
+uart:
+  id: bms_uart
+  tx_pin: GPIO4
+  rx_pin: GPIO2
+  baud_rate: 9600
+  parity: EVEN
+
+# Connect Modbus Bus to UART
+modbus:
+  id: modbus_bus
+  uart_id: bms_uart
+  send_wait_time: 250ms
+
+# Battery ID Controller (Factory default is usually ID 1 / Address 1)
+modbus_controller:
+  - id: zte_bms
+    address: 0x01
+    modbus_id: modbus_bus
+    update_interval: 5s  # 5s interval for Modbus serial data communication stability
+
+# ==========================================
+# 1. MAIN SENSOR & TEMPLATE BLOCK
+# ==========================================
+sensor:
+  # ==========================================
+  # A. MAIN REGISTERS (STATUS BLOCK 0x0080 - 0x0083)
+  # ==========================================
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Total Voltage"
+    id: total_voltage
+    register_type: input
+    address: 0x0080        # packVoltage = frame.getChar() / 100
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Busbar Voltage"
+    register_type: input
+    address: 0x0081        # busbar voltage
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Average Temperature"
+    register_type: input
+    address: 0x0082        # tempAverage = frame.getShort() / 10
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Current"
+    id: battery_current
+    register_type: input
+    address: 0x0083        # packCurrent = frame.getShort() / 100
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # ==========================================
+  # B. BATTERY CELL VOLTAGES 1 - 15 (0x0084 - 0x0092)
+  # ==========================================
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 1 Voltage"
+    id: cell_1
+    register_type: input
+    address: 0x0084
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 2 Voltage"
+    id: cell_2
+    register_type: input
+    address: 0x0085
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 3 Voltage"
+    id: cell_3
+    register_type: input
+    address: 0x0086
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 4 Voltage"
+    id: cell_4
+    register_type: input
+    address: 0x0087
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 5 Voltage"
+    id: cell_5
+    register_type: input
+    address: 0x0088
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 6 Voltage"
+    id: cell_6
+    register_type: input
+    address: 0x0089
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 7 Voltage"
+    id: cell_7
+    register_type: input
+    address: 0x008A
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 8 Voltage"
+    id: cell_8
+    register_type: input
+    address: 0x008B
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 9 Voltage"
+    id: cell_9
+    register_type: input
+    address: 0x008C
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 10 Voltage"
+    id: cell_10
+    register_type: input
+    address: 0x008D
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 11 Voltage"
+    id: cell_11
+    register_type: input
+    address: 0x008E
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 12 Voltage"
+    id: cell_12
+    register_type: input
+    address: 0x008F
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 13 Voltage"
+    id: cell_13
+    register_type: input
+    address: 0x0090
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 14 Voltage"
+    id: cell_14
+    register_type: input
+    address: 0x0091
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell 15 Voltage"
+    id: cell_15
+    register_type: input
+    address: 0x0092
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # ==========================================
+  # C. CELL TEMPERATURE SENSORS (0x0093 - 0x0096)
+  # ==========================================
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell Temperature 1"
+    register_type: input
+    address: 0x0093        # cellTemperature = frame.getShort() / 10
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell Temperature 2"
+    register_type: input
+    address: 0x0094
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell Temperature 3"
+    register_type: input
+    address: 0x0095
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cell Temperature 4"
+    register_type: input
+    address: 0x0096
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # ==========================================
+  # D. OVERALL PACK PERFORMANCE (0x0097 - 0x009E)
+  # ==========================================
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Busbar Current"
+    register_type: input
+    address: 0x0097        # busbar current
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "State of Charge (SOC)"
+    register_type: input
+    address: 0x0098        # packSOC = frame.getChar() * 10
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "State of Health (SOH)"
+    register_type: input
+    address: 0x0099        # packSOH = frame.getChar() * 10
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "Cycle Count"
+    register_type: input
+    address: 0x009A        # bmsCycles = frame.getChar()
+    value_type: U_WORD
+    unit_of_measurement: "cycles"
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: zte_bms
+    name: "BMS Charge Discharge Status Code"
+    id: bms_status_code
+    register_type: input
+    internal: true
+    address: 0x009E        # status = frame.getChar()
+    value_type: U_WORD
+    accuracy_decimals: 0
+
+  # ==========================================
+  # E. TEMPLATE SENSORS (FIXED FOR COMPILER SAFETY)
+  # ==========================================
+  - platform: template
+    name: "Max Cell Voltage"
+    id: max_cell_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    lambda: |-
+      float cells[] = {
+        id(cell_1).state, id(cell_2).state, id(cell_3).state,
+        id(cell_4).state, id(cell_5).state, id(cell_6).state,
+        id(cell_7).state, id(cell_8).state, id(cell_9).state,
+        id(cell_10).state, id(cell_11).state, id(cell_12).state,
+        id(cell_13).state, id(cell_14).state, id(cell_15).state
+      };
+      
+      float max_v = -1.0;
+      for (int i = 0; i < 15; i++) {
+        // Only process cells with valid values (not NAN and greater than 0)
+        if (!std::isnan(cells[i]) && cells[i] > 0) {
+          if (max_v == -1.0 || cells[i] > max_v) {
+            max_v = cells[i];
+          }
+        }
+      }
+      
+      if (max_v == -1.0) {
+        return NAN;
+      }
+      return max_v;
+
+  - platform: template
+    name: "Min Cell Voltage"
+    id: min_cell_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    lambda: |-
+      float cells[] = {
+        id(cell_1).state, id(cell_2).state, id(cell_3).state,
+        id(cell_4).state, id(cell_5).state, id(cell_6).state,
+        id(cell_7).state, id(cell_8).state, id(cell_9).state,
+        id(cell_10).state, id(cell_11).state, id(cell_12).state,
+        id(cell_13).state, id(cell_14).state, id(cell_15).state
+      };
+      
+      float min_v = -1.0;
+      for (int i = 0; i < 15; i++) {
+        // Only process cells with valid values (not NAN and greater than 0)
+        if (!std::isnan(cells[i]) && cells[i] > 0) {
+          if (min_v == -1.0 || cells[i] < min_v) {
+            min_v = cells[i];
+          }
+        }
+      }
+      
+      if (min_v == -1.0) {
+        return NAN;
+      }
+      return min_v;
+
+  - platform: template
+    name: "Cell Voltage Delta"
+    id: cell_delta
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    lambda: |-
+      float max_v = id(max_cell_voltage).state;
+      float min_v = id(min_cell_voltage).state;
+      
+      if (std::isnan(max_v) || std::isnan(min_v)) {
+        return NAN;
+      }
+      return (max_v - min_v);
+
+# ==========================================
+# F. TEXT SENSOR FOR BMS STATUS CODE MAPPING
+# ==========================================
+text_sensor:
+  - platform: template
+    name: "BMS Operational Status"
+    id: bms_status_text
+    update_interval: 5s
+    lambda: |-
+      float status = id(bms_status_code).state;
+      
+      if (std::isnan(status)) {
+        return std::string("Unknown");
+      }
+      
+      int s = (int)status;
+      
+      if (s == 0) {
+        return std::string("Standby");
+      }
+      if (s == 2) {
+        return std::string("Charging");
+      }
+      if (s == 1) {
+        return std::string("Discharging");
+      }
+      if (s == 3) {
+        return std::string("Fully Charged");
+      }
+      if (s == 4) {
+        return std::string("Fault / Protection");
+      }
+      
+      // Absolute fallback return in the last line to prevent compiler errors
+      return std::string("Code: ") + std::to_string(s);
